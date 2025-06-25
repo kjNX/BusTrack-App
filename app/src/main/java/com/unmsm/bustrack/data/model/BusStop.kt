@@ -4,8 +4,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class BusStop(
+    val id: Int,
     val name: String,
     val longitude: Double,
     val latitude: Double,
-    val population: Int, // Cantidad de usuarios en dicho paradero
+//    val population: Int, // Cantidad de usuarios en dicho paradero
 )

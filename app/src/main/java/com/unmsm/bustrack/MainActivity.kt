@@ -27,11 +27,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mapbox.geojson.Point
+import com.mapbox.maps.MapView
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.annotation.generated.PointAnnotation
 import com.mapbox.maps.extension.compose.annotation.rememberIconImage
+import com.unmsm.bustrack.ui.MapDisplay
+import com.unmsm.bustrack.ui.MapViewModel
 import com.unmsm.bustrack.ui.theme.BusTrackTheme
 
 class MainActivity : ComponentActivity() {
@@ -49,37 +53,7 @@ fun TopBar() {
 }
 
 @Composable
-fun MapDisplay(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    MapboxMap(
-        modifier = modifier.fillMaxSize(),
-        mapViewportState = rememberMapViewportState {
-            setCameraOptions {
-                zoom(16.0)
-//                center(Point.fromLngLat(-98.0, 39.5))
-                center(Point.fromLngLat(-77.085826, -12.053679))
-                pitch(0.0)
-                bearing(0.0)
-            }
-        }
-    ) {
-        var text by remember { mutableStateOf("Paradero") }
-
-        var markerResourceId by remember { mutableIntStateOf(R.drawable.bus_marker) }
-        val marker = rememberIconImage(key = markerResourceId, painter = painterResource(markerResourceId))
-        PointAnnotation(point = Point.fromJson("{\"type\":\"Point\",\"coordinates\":[-77.085826,-12.053679]}")) {
-            iconImage = marker
-            textField = text
-            interactionsState.onClicked {
-                Toast.makeText(context, "Tap!", Toast.LENGTH_SHORT).show()
-                true
-            }
-        }
-    }
-}
-
-@Composable
-fun AppScreen() {
+fun AppScreen(viewModel: MapViewModel = viewModel(factory = MapViewModel.Factory)) {
     Scaffold(
         topBar = { TopBar() },
         floatingActionButton = {
@@ -91,7 +65,7 @@ fun AppScreen() {
             }
         }
     ) { innerPadding ->
-        MapDisplay(modifier = Modifier.padding(innerPadding))
+        MapDisplay(mapData = viewModel, modifier = Modifier.padding(innerPadding))
     }
 }
 
