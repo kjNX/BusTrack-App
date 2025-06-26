@@ -1,13 +1,11 @@
 package com.unmsm.bustrack.data.repository
 
-import com.unmsm.bustrack.data.model.MapData
+import com.unmsm.bustrack.data.model.BusStop
+import com.unmsm.bustrack.data.model.NextBus
+import com.unmsm.bustrack.data.network.BusTrackApiService
 
-class NetworkMapRepository : MapRepository {
-    override suspend fun getMapData(): MapData {
-        TODO("Not yet implemented")
-    }
+class NetworkMapRepository(private val apiService: BusTrackApiService) : MapRepository {
+    override suspend fun getBusStops(): List<BusStop> = apiService.getBusStops()
 
-    override suspend fun getTime(busStopId: Int, routeId: Int): Float {
-        TODO("Not yet implemented")
-    }
+    override suspend fun getTimes(busStopId: Int): List<NextBus> = apiService.getTimes(busStopId)
 }

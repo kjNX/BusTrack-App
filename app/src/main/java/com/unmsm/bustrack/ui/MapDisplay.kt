@@ -1,33 +1,46 @@
 package com.unmsm.bustrack.ui
 
-import android.widget.Toast
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.mapbox.geojson.Point
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.annotation.generated.PointAnnotation
 import com.mapbox.maps.extension.compose.annotation.rememberIconImage
 import com.unmsm.bustrack.R
-import com.unmsm.bustrack.data.model.MapData
+import com.unmsm.bustrack.data.model.BusStop
 
 @Composable
-fun MapDisplay(mapData: MapData, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
+fun MapDisplay(
+    busStops: List<BusStop>,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+//    val context = LocalContext.current
+    var currentZoom by remember { mutableDoubleStateOf(16.0) }
     MapboxMap(
         modifier = modifier.fillMaxSize(),
         mapViewportState = rememberMapViewportState {
             setCameraOptions {
-                zoom(16.0)
+                zoom(currentZoom)
 //                center(Point.fromLngLat(-98.0, 39.5))
                 center(Point.fromLngLat(-77.085826, -12.053679))
                 pitch(0.0)
@@ -35,42 +48,68 @@ fun MapDisplay(mapData: MapData, modifier: Modifier = Modifier) {
             }
         }
     ) {
-        var text by remember { mutableStateOf("Paradero") }
+//        var text by remember { mutableStateOf("Paradero") }
 
         var markerResourceId by remember { mutableIntStateOf(R.drawable.bus_marker) }
-        val marker = rememberIconImage(key = markerResourceId, painter = painterResource(markerResourceId))
-        mapData.busStops.forEach { i ->
+        val marker = rememberIconImage(
+            key = markerResourceId,
+            painter = painterResource(markerResourceId)
+        )
+        busStops.forEach { i ->
             PointAnnotation(point = Point.fromLngLat(i.longitude, i.latitude)) {
                 iconImage = marker
                 textField = i.name
+                iconSize = currentZoom / 32
                 interactionsState.onClicked {
-                    Toast.makeText(context, "Hola!", Toast.LENGTH_SHORT).show()
+                    onSelect(i.id)
                     true
-                }
+                }.also { it.isDraggable = false }
             }
         }
     }
 }
 
 @Composable
-fun ErrorScreen(onRetry: () -> Unit, modifier: Modifier = Modifier) {
-    Column {
-
-    }
-}
-
-@Composable
-fun LoadingScreen(modifier: Modifier = Modifier) {
-    Column {
-
-    }
-}
-
-@Composable
-fun MapScreen(mapsUiState: MapUiState, onRetry: () -> Unit, modifier: Modifier = Modifier) {
+fun MapStage(
+    mapsUiState: MapUiState,
+    onSelect: (Int) -> Unit,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     when(mapsUiState) {
         is MapUiState.Error -> ErrorScreen(onRetry, modifier)
         is MapUiState.Loading -> LoadingScreen(modifier)
-        is MapUiState.Success -> MapDisplay(mapsUiState.map, modifier)
+        is MapUiState.Success -> MapDisplay(mapsUiState.map, onSelect, modifier)
     }
+}
+
+@Composable
+fun MapScreen(
+    onSelect: (Int) -> Unit,
+    viewModel: MapViewModel = viewModel(factory = MapViewModel.Factory)
+) {
+    Scaffold(
+        topBar = { TopBar() },
+        floatingActionButton = {
+            FloatingActionButton(onClick = {}) {
+                Icon(
+                    imageVector = Icons.Default.MyLocation,
+                    contentDescription = "Center location"
+                )
+            }
+        }
+    ) { innerPadding ->
+        MapStage(
+            mapsUiState = viewModel.mapUiState,
+            onSelect = onSelect,
+            onRetry = viewModel::getBusStops,
+            modifier = Modifier.padding(innerPadding)
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TopBar() {
+    CenterAlignedTopAppBar(title = { Text(text = stringResource(R.string.app_name)) })
 }

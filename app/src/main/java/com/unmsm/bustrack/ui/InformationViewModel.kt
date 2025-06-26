@@ -10,30 +10,31 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.unmsm.bustrack.BusTrackApplication
-import com.unmsm.bustrack.data.model.BusStop
+import com.unmsm.bustrack.data.model.NextBus
+import com.unmsm.bustrack.data.model.ViewData
 import com.unmsm.bustrack.data.repository.MapRepository
 import kotlinx.coroutines.launch
 
-sealed interface MapUiState {
-    data class Success(val map: List<BusStop>) : MapUiState
-    object Error : MapUiState
-    object Loading : MapUiState
+sealed interface InformationUiState {
+    data class Success(val map: List<NextBus>) : InformationUiState
+    object Error : InformationUiState
+    object Loading : InformationUiState
 }
 
-class MapViewModel(private val repository: MapRepository) : ViewModel() {
-    var mapUiState: MapUiState by mutableStateOf(MapUiState.Loading)
+class InformationViewModel(private val repository: MapRepository) : ViewModel() {
+    var informationUiState: InformationUiState by mutableStateOf(InformationUiState.Loading)
 
     init {
-        getBusStops()
+        getPredictions()
     }
 
-    fun getBusStops() {
-        mapUiState = MapUiState.Loading
+    fun getPredictions() {
+        informationUiState = InformationUiState.Loading
         viewModelScope.launch {
-            mapUiState = try {
-                val status = repository.getBusStops()
-                MapUiState.Success(status)
-            } catch (_: Exception) { MapUiState.Error }
+            informationUiState = try {
+                val status = repository.getTimes(ViewData.selected)
+                InformationUiState.Success(status)
+            } catch (_: Exception) { InformationUiState.Error }
         }
     }
 
@@ -42,7 +43,7 @@ class MapViewModel(private val repository: MapRepository) : ViewModel() {
             initializer {
                 val application = (this[APPLICATION_KEY] as BusTrackApplication)
                 val currentRepository = application.container.repository
-                MapViewModel(currentRepository)
+                InformationViewModel(currentRepository)
             }
         }
     }
